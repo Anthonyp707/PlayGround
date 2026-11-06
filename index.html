@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#101a17">
+<title>Hearth & Hollow — Paper Town</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="world"></canvas>
+  <div class="screen-vignette"></div>
+
+  <header class="topbar">
+    <div class="brand"><div class="crest">✦</div><div class="brand-text"><b>Hearth &amp; Hollow</b><small>Brackenridge · a paper town</small></div></div>
+    <div class="top-right">
+      <div class="pill" id="clock">Day 1 · 08:00</div>
+      <div class="pill coins" id="coins">◈ 30</div>
+      <button class="icon-btn" id="journalBtn" title="Journal">▤</button>
+      <button class="icon-btn" id="statusBtn" title="Status">☰</button>
+    </div>
+  </header>
+
+  <div class="hud" id="hud">
+    <div class="hud-left">
+      <div class="player-card card">
+        <div class="player-top">
+          <div class="mini-avatar" id="hudAvatar">✦</div>
+          <div class="who"><div class="name" id="hudName">Alder Rowan</div><div class="job" id="hudJob">Newcomer · Meadow plot</div></div>
+          <div class="lvl">Lv <b id="hudLevel">1</b></div>
+        </div>
+        <div class="bars">
+          <div class="bar-row"><span>Vitality</span><div class="bar hp"><i id="hpBar"></i></div><em id="hpText">100</em></div>
+          <div class="bar-row"><span>Fullness</span><div class="bar hunger"><i id="hungerBar"></i></div><em id="hungerText">82</em></div>
+          <div class="bar-row"><span>Energy</span><div class="bar energy"><i id="energyBar"></i></div><em id="energyText">88</em></div>
+        </div>
+        <div class="chips">
+          <div class="chip"><b id="honorVal">0</b><span>Honor</span></div>
+          <div class="chip"><b id="repVal">0</b><span>Renown</span></div>
+          <div class="chip"><b id="wantedVal">Clean</b><span>Wanted</span></div>
+        </div>
+      </div>
+      <div class="quest-card card" id="questCard">
+        <div class="q-title">A fresh start <em id="questCount">0 / 3</em></div>
+        <div id="questList"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="prompt" id="prompt"></div>
+  <button class="action-btn" id="actionBtn" hidden><span class="a-icon" id="actionIcon">✦</span><span class="a-label" id="actionLabel">Talk</span><kbd>E</kbd></button>
+  <div class="joystick" id="joystick"><div class="stick" id="stick"></div></div>
+  <div class="hints">
+    <span><kbd>WASD</kbd> move</span><span><kbd>E</kbd> action</span><span><kbd>Space</kbd> jump</span><span><kbd>Q</kbd><kbd>R</kbd> orbit</span><span><kbd>Drag</kbd> camera</span>
+  </div>
+  <div class="toast" id="toast" hidden></div>
+</div>
+
+<!-- START / CHARACTER CREATION -->
+<div class="start-screen" id="startScreen">
+  <div class="start-panel">
+    <div class="eyebrow">A new life · Brackenridge, 14th spring</div>
+    <h1>Make a life<br>worth telling.</h1>
+    <p class="lede">A paper town, a crooked cottage, and a thousand small choices. Build, farm, bargain, befriend, brawl — or make a little trouble. The next chapter is yours.</p>
+    <div class="custom-fields" id="customFields"></div>
+    <div class="eyebrow plot-eyebrow">Choose your homestead</div>
+    <div class="plots" id="plotRow">
+      <button class="plot selected" data-plot="meadow"><b>🌾 Bramblewick</b><small>Fertile soil, quiet neighbors, a longer walk.</small></button>
+      <button class="plot" data-plot="creek"><b>🌊 Foxglove Creek</b><small>Herbs and water. Damp ground, stubborn roof.</small></button>
+      <button class="plot" data-plot="ridge"><b>⛰️ Thistle Ridge</b><small>Stone at the doorstep. Thin soil, steep path.</small></button>
+    </div>
+    <button class="start-btn" id="startBtn">Wake up in Brackenridge →</button>
+    <button class="start-btn ghost" id="continueBtn" hidden>Continue saved life →</button>
+    <div class="note">Your choices shape how the town remembers you. Character details can be changed later at a mirror.</div>
+  </div>
+  <div class="start-preview">
+    <div class="preview-tag">Live character preview · drag to turn</div>
+    <div class="preview-hint">A stranger at the edge of town</div>
+  </div>
+</div>
+
+<!-- NPC CONVERSATION -->
+<div class="overlay npc-overlay" id="npcUI" hidden>
+  <div class="npc-card">
+    <button class="close-x" id="npcClose" aria-label="Close">×</button>
+    <div class="npc-scene">
+      <div class="portrait-side">
+        <div class="portrait" id="npcPortrait"></div>
+        <div class="mood-float" id="npcMood">✦</div>
+        <div class="bark" id="npcBark" hidden></div>
+        <div class="player-mini" id="playerMini"></div>
+      </div>
+      <div class="talk-side">
+        <div class="eyebrow" id="npcRole">Baker</div>
+        <h2 id="npcName">Mara Vell</h2>
+        <div class="bond-row"><span>Hate</span><div class="bond"><i id="bondFill"></i></div><span>Love</span></div>
+        <div class="preview" id="npcPreview">Choose an action. Their face will tell you how it lands.</div>
+        <div class="bubbles" id="npcBubbles"></div>
+        <div class="queue-label">Queue · actions play in real time</div>
+        <div class="queue" id="npcQueue"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GENERIC MENU -->
+<div class="overlay modal-backdrop" id="modalBackdrop" hidden>
+  <div class="modal" id="modal"></div>
+</div>
+
+<!-- COMBAT -->
+<div class="combat" id="combatUI" hidden>
+  <div class="combat-shade"></div>
+  <div class="combat-top">
+    <div class="enemy-cards" id="enemyCards"></div>
+    <div class="turn-banner" id="turnBanner">YOUR TURN</div>
+  </div>
+  <div class="combat-log" id="combatLog">A hush falls over the paper stage.</div>
+  <div class="combat-bottom">
+    <div class="combat-player">
+      <div class="cp-top"><span id="combatName">Alder</span><b id="combatHpText">100 / 100</b></div>
+      <div class="bar hp"><i id="combatHp"></i></div>
+      <div class="cp-top fp"><span>Focus</span><b id="combatFpText">10 / 10</b></div>
+      <div class="bar fp"><i id="combatFp"></i></div>
+    </div>
+    <div class="combat-actions" id="combatActions">
+      <button data-act="attack"><b>⚔ Attack</b><small>timing strike</small></button>
+      <button data-act="power"><b>✦ Power Strike</b><small>3 focus</small></button>
+      <button data-act="mend"><b>✚ Mend</b><small>4 focus</small></button>
+      <button data-act="flee"><b>↩ Flee</b><small>risky</small></button>
+    </div>
+  </div>
+  <div class="minigame" id="timingUI" hidden>
+    <div class="mg-title" id="mgTitle">STRIKE</div>
+    <div class="mg-track"><div class="mg-zone"></div><div class="mg-perfect"></div><div class="mg-needle" id="mgNeedle"></div></div>
+    <div class="mg-hint">Tap when the needle crosses the golden band</div>
+    <button id="strikeBtn">STRIKE</button>
+  </div>
+  <div class="block-ui" id="blockUI" hidden>
+    <div class="block-ring"></div>
+    <button id="blockBtn">BLOCK!</button>
+    <div class="block-hint">Tap as the ring closes</div>
+  </div>
+  <div class="combat-result" id="combatResult" hidden></div>
+</div>
+
+<div class="fade" id="fade"></div>
+
+<script src="vendor/three.min.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
